@@ -137,6 +137,7 @@ class ConfirmationPage(WizardPage):
                     self._publish_dir, os.pardir
                 )
             )
+            print dirpath
             filename = os.path.basename(self._publish_dir)
             zip_out_file = os.path.join(dirpath, filename)
 

@@ -1049,19 +1049,19 @@ class ProjectPage(WizardPage):
         def validate_time_attribute(layer_name, attribute_name, time_mask):
             validation_mask = []
             unique_mask = []
-            has_special_char = False
+            create_unix = False
             for l in self.plugin.layers_list():
                 if l.name() == layer_name:
                     # validation
                     old_idx = l.fieldNameIndex(attribute_name)
                     for feature in l.getFeatures():
-                        mask_value, special_char = validate(feature.attributes()[old_idx], time_mask)
+                        mask_value, is_suitable = validate(feature.attributes()[old_idx], time_mask)
                         validation_mask.append(mask_value)
                         if mask_value != -1 and mask_value not in unique_mask:
                             unique_mask.append(mask_value)
-                        if special_char:
-                            has_special_char = True
-                    return validation_mask, unique_mask, has_special_char
+                        if is_suitable:
+                            create_unix = True
+                    return validation_mask, unique_mask, create_unix
 
         # create new attribute
         def create_new_attribute(attribute_layer, attribute_name):
@@ -1095,7 +1095,7 @@ class ProjectPage(WizardPage):
                             attribute_values.append(unix)
                         feature_idx += 1
             if len(attribute_values) > 0:
-                print [min(attribute_values), max(attribute_values)]
+                # print [min(attribute_values), max(attribute_values)]
                 return [min(attribute_values), max(attribute_values)]
 
         def create_unix_time_attribute(layer_name, time_attribute_name, new_attribute_name, time_format_mask):
@@ -1131,7 +1131,7 @@ class ProjectPage(WizardPage):
         # time format masks
         datetime_mask_array = [
             ["%Y-%m-%d", "YYYY-MM-DD", False],
-            ["%d-%m-%Y", "DD-MM-YYYY", False],
+            ["%d-%m-%Y", "DD-MM-YYYY", True],
             ["%Y-%m-%dT%H:%M:%S", "YYYY-MM-DDTHH:mm", True]
         ]
 
@@ -1147,17 +1147,12 @@ class ProjectPage(WizardPage):
 
         def get_time_info(layer_name, attribute_name):
 
-            validation_mask, unique_mask, special_char = validate_time_attribute(layer_name, attribute_name, datetime_mask_array)
+            validation_mask, unique_mask, create_unix = validate_time_attribute(layer_name, attribute_name, datetime_mask_array)
 
-            print special_char
-
-            if len(unique_mask) > 1 or special_char:
-                print 'special'
+            if len(unique_mask) > 1 or create_unix:
                 return create_unix_time_attribute(layer_name, attribute_name, unix_time_layer, validation_mask), True, ''
-            elif len(unique_mask) == 1 and special_char is not True:
-                print 'not special'
+            elif len(unique_mask) == 1 and create_unix is not True:
                 mask = most_common(remove_values_from_list(validation_mask, -1))
-                print mask
                 return get_min_max_mask(layer_name, attribute_name, validation_mask), True, mask
             else:
                 return [], False, ''
